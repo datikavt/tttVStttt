@@ -1,0 +1,5 @@
+# Ignoring any pdf and png files because these are usually plots and should always be made directly from the code
+*.pdf
+*.png
+# Ignoring .root files
+*.root
