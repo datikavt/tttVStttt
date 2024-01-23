@@ -275,7 +275,7 @@ print("len of L3_events is " +str(len(L3_Channel_events)) )
 print("Same mother top length is " + str(len(Same_Mother_Top)))
 
 if args.process=='tttt':
-    with uproot.recreate("selected_Events_"+str(args.process)+".root") as output_file:
+    with uproot.recreate(str(args.process)+"_selected_Events.root") as output_file:
         output_file["Events"] = {
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
                             "gen_lep_2_pt": gen_lep_2_pt, "gen_lep_2_phi": gen_lep_2_phi,"gen_lep_2_eta": gen_lep_2_eta, "gen_lep_2_pdgId": gen_lep_2_pdgId,
@@ -289,7 +289,7 @@ if args.process=='tttt':
                         }
 
 else:   
-    with uproot.recreate("selected_Events"+str(args.process)+".root")  as output_file:
+    with uproot.recreate(str(args.process)+"_selected_Events.root")  as output_file:
         output_file["Events"] = {
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
                             "gen_lep_2_pt": gen_lep_2_pt, "gen_lep_2_phi": gen_lep_2_phi,"gen_lep_2_eta": gen_lep_2_eta, "gen_lep_2_pdgId": gen_lep_2_pdgId,
