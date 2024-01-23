@@ -11,7 +11,7 @@ from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 
 parser = argparse.ArgumentParser(description='selecting events from a ROOT file.')
 parser.add_argument('-f','--file',type=str, help='specify the filepath that you want to select events from')
-parser.add_argument('-n','--ntops',type=int, help='Number of tops. Either 3 or 4')
+parser.add_argument('-p','--process',type=str,help='specify the process ex. tttW, tttt, tttJ')
 args = parser.parse_args()
 
 print('INFO: selecting events from the file:' + str(args.file))
@@ -71,7 +71,7 @@ gen_hp_top = ak.pad_none(gen_hp_top, 4)
 gen_hp_top_1 = gen_hp_top[:, 0]
 gen_hp_top_2 = gen_hp_top[:, 1]
 gen_hp_top_3=gen_hp_top[:,2]
-if args.ntops == 4:
+if args.process=='tttt':
     gen_hp_top_4=gen_hp_top[:,3]
 
 # find last copy of top quarks before decay. 
@@ -80,7 +80,7 @@ gen_top = ak.pad_none(gen_top, 4)
 gen_top_1 = gen_top[:, 0]
 gen_top_2 = gen_top[:, 1]
 gen_top_3 = gen_top[:,2]
-if args.ntops==4:
+if args.process=='tttt':
     gen_top_4 = gen_top[:,3]
 
 # identify top quark decay products
@@ -88,7 +88,7 @@ is_top_1_decay = is_descended_from(gen_part, gen_top_1.index)
 is_top_2_decay = is_descended_from(gen_part, gen_top_2.index)
 is_top_3_decay= is_descended_from(gen_part, gen_top_3.index)
 gen_part["is_top_decay"] = (is_top_1_decay | is_top_2_decay | is_top_3_decay)
-if args.ntops==4:
+if args.process=='tttt':
     is_top_4_decay= is_descended_from(gen_part, gen_top_4.index)
     gen_part["is_top_decay"] = (is_top_1_decay | is_top_2_decay | is_top_3_decay | is_top_4_decay)
 
@@ -98,7 +98,7 @@ is_w = (gen_part.absPdgId == 24) & from_hard_proc & is_last_copy
 gen_w_1 = ak.firsts(gen_part[is_w & is_top_1_decay])
 gen_w_2 = ak.firsts(gen_part[is_w & is_top_2_decay])
 gen_w_3= ak.firsts(gen_part[is_w & is_top_3_decay])
-if args.ntops==4:
+if args.process=='tttt':
     gen_w_4= ak.firsts(gen_part[is_w & is_top_4_decay])
 
 # identify W boson decay products
@@ -106,7 +106,7 @@ is_w_1_decay = is_descended_from(gen_part, gen_w_1.index)
 is_w_2_decay = is_descended_from(gen_part, gen_w_2.index)
 is_w_3_decay = is_descended_from(gen_part, gen_w_3.index)
 gen_part["is_w_decay"] = (is_w_1_decay | is_w_2_decay | is_w_3_decay)
-if args.ntops==4:
+if args.process=='tttt':
     is_w_4_decay = is_descended_from(gen_part, gen_w_4.index)
     gen_part["is_w_decay"] = (is_w_1_decay | is_w_2_decay | is_w_3_decay | is_w_4_decay )
 
@@ -121,7 +121,7 @@ gen_lep_1 = gen_part[lepton_condition1] #We require the pt of the lepton to be a
 gen_lep_2 = gen_part[lepton_condition2]
 gen_lep_3 = gen_part[lepton_condition3]
 
-if args.ntops==4:
+if args.process=='tttt':
     lepton_condition4=ak.fill_none((is_lepton & is_w_4_decay & has_enough_pt),False)
     gen_lep_4 = gen_part[lepton_condition4]
 
@@ -136,7 +136,7 @@ is_3L_channel = ak.fill_none(  #Fill none's with False
     )
 
 
-if args.ntops==4:
+if args.process=='tttt':
     n_gen_lep_4 = ak.num(gen_lep_4)
     is_3L_channel = ak.fill_none(  #Fill none's with False
         (
@@ -171,7 +171,7 @@ gen_lep_3_phi=(gen_lep_3_selected.phi)
 gen_lep_3_eta=(gen_lep_3_selected.eta)
 gen_lep_3_pdgId=(gen_lep_3_selected.absPdgId)
 
-if args.ntops==4:
+if args.process=='tttt':
     gen_lep_4_selected = gen_lep_4[is_3L_channel]
     gen_lep_4_pt= (gen_lep_4_selected.pt)
     gen_lep_4_phi=(gen_lep_4_selected.phi)
@@ -193,7 +193,7 @@ gen_top_3_pt=np.array(gen_top_3_selected.pt)
 gen_top_3_phi=np.array(gen_top_3_selected.phi)
 gen_top_3_eta=np.array(gen_top_3_selected.eta)
 
-if args.ntops==4:
+if args.process=='tttt':
     gen_top_4_selected = gen_top_4[is_3L_channel]
     gen_top_4_pt=np.array(gen_top_4_selected.pt)
     gen_top_4_phi=np.array(gen_top_4_selected.phi)
@@ -204,7 +204,7 @@ gen_top_1_Mothers=parent(gen_top_1_selected)
 gen_top_2_Mothers=parent(gen_top_2_selected)
 gen_top_3_Mothers=parent(gen_top_3_selected)
 
-if args.ntops==4:
+if args.process=='tttt':
     gen_top_4_Mothers=parent(gen_top_4_selected)
 
 #Remember gen_part is already 3L selected
@@ -220,7 +220,7 @@ def is_same_mother(gen_top_Mother1, gen_top_Mother2 ):
 #Need to construct an array that will write 
 Same_Mother_Top=[]
 #I'll go for a loop but surely there's a better way
-if args.ntops==4:
+if args.process=='tttt':
      for i in range(len(L3_Channel_events)):
         #Make sure there's no error and they don't all have same mother
         gen_top_1_Mother=gen_top_1_Mothers[i]
@@ -274,8 +274,8 @@ else:
 print("len of L3_events is " +str(len(L3_Channel_events)) )
 print("Same mother top length is " + str(len(Same_Mother_Top)))
 
-if args.ntops==4:
-    with uproot.recreate("selected_Events.root") as output_file:
+if args.process=='tttt':
+    with uproot.recreate("selected_Events_"+str(args.process)+".root") as output_file:
         output_file["Events"] = {
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
                             "gen_lep_2_pt": gen_lep_2_pt, "gen_lep_2_phi": gen_lep_2_phi,"gen_lep_2_eta": gen_lep_2_eta, "gen_lep_2_pdgId": gen_lep_2_pdgId,
@@ -289,7 +289,7 @@ if args.ntops==4:
                         }
 
 else:   
-    with uproot.recreate("selected_Events.root") as output_file:
+    with uproot.recreate("selected_Events"+str(args.process)+".root")  as output_file:
         output_file["Events"] = {
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
                             "gen_lep_2_pt": gen_lep_2_pt, "gen_lep_2_phi": gen_lep_2_phi,"gen_lep_2_eta": gen_lep_2_eta, "gen_lep_2_pdgId": gen_lep_2_pdgId,
