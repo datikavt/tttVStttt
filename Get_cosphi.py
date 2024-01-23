@@ -17,14 +17,16 @@ import cmsstyle as CMS # For ROOT plotting
 
 parser = argparse.ArgumentParser(description='selecting events from a ROOT file.')
 parser.add_argument('-f','--file',type=str, help='specify the filepath that you want to start pairing from')
-parser.add_argument('-n','--ntops',type=str, help='Number of tops. Either 3 or 4',default=3)
 parser.add_argument('-p','--process',type=str,help='specify the process ex. tttW, tttt, tttJ',default='tttW')
 args = parser.parse_args()
 
 fileData=uproot.open(args.file)
 events=fileData["Events"]
 Same_Mother_Top=np.array(events["Same_Mother_top"])
-print(Same_Mother_Top)
+is_7=ak.fill_none((Same_Mother_Top==7),False)
+Same_Mother_Top_is_7=Same_Mother_Top[is_7]
+print(len(Same_Mother_Top_is_7)) 
+
 
 top_mass=172.76 #GeV
 electron_mass=0.000511 #GeV
@@ -55,69 +57,61 @@ if args.process=='tttt':
     top4_ys=energyflow.ys_from_pts_etas_ms(top4_pts,top4_etas, top_masses)
 
 #lepton kinematics + pdgIds
-lepton1_etas=np.array(events["gen_lep_1_eta"])
-lepton1_phis=np.array(events["gen_lep_1_phi"])
-lepton1_pts=np.array(events["gen_lep_1_pt"])
-# lepton1_pts= ak.pad_none(ak.from_numpy(lepton1_pts),1,axis=0)  # also padding to at least four jets in the event
-# print(lepton1_pts)
-# lepton1_pts=ak.to_numpy(lepton1_pts)
-# lepton1_pts[np.isnan(lepton1_pts)] = 0
-# # print(lepton1_pts.tolist())
-lepton1_Ids=np.array(events["gen_lep_1_pdgId"])
-
-# lepton1_ms=np.ones(len(np.array(events["gen_top_1_eta"]))) #just an array with 1s for now
-# for i in range(len(lepton1_etas)):
-#     if lepton1_Ids[i]==11:
-#         lepton1_ms[i]=electron_mass
-#     elif lepton1_Ids[i]==13:
-#         lepton1_ms[i]=muon_mass
-#     if lepton1_Ids[i] !=11 and lepton1_Ids[i] !=13:
-#         print("Error lepton1_Id is not 11 or 13 for event number" +str(i) + "it equals to " +str(lepton1_Ids[i]))
-lepton1_ms = np.where(lepton1_Ids == 11, electron_mass, muon_mass) 
-lepton1_pts = lepton1_pts.astype('float') #Need as float for the ys_from_pts_etas_ms to work
-lepton1_etas= lepton1_etas.astype('float')
+lepton1_pts=np.where(np.array(events["gen_lep_1_pt"]),np.array(events["gen_lep_1_pt"]),0)
+lepton1_etas=np.where(np.array(events["gen_lep_1_eta"]),np.array(events["gen_lep_1_eta"]),0) #Where we have lepton1_etass keep it otherwise set it to 0
+lepton1_phis=np.where(np.array(events["gen_lep_1_phi"]),np.array(events["gen_lep_1_phi"]),0) 
+lepton1_Ids=np.where(np.array(events["gen_lep_1_pdgId"]),np.array(events["gen_lep_1_pdgId"]),0)
+lepton1_pts=lepton1_pts.astype('float') 
+lepton1_etas=lepton1_etas.astype('float')
+lepton1_phis=lepton1_phis.astype('float')
+lepton1_Ids=lepton1_Ids.astype('float')
+lepton1_ms = np.where(lepton1_Ids == 11, electron_mass, muon_mass) #Notice that if the particle is missing we will give it muon mass we can use np.select if we want 0s
 lepton1_ys=energyflow.ys_from_pts_etas_ms(lepton1_pts, lepton1_etas, lepton1_ms)
 
-lepton2_etas=np.array(events["gen_lep_2_eta"])
-lepton2_phis=np.array(events["gen_lep_2_phi"])
-lepton2_pts=np.array(events["gen_lep_2_pt"])
-lepton2_Ids=np.array(events["gen_lep_2_pdgId"])
-lepton2_ms = np.where(lepton2_Ids == 11, electron_mass, muon_mass) 
+lepton2_pts=np.where(np.array(events["gen_lep_2_pt"]),np.array(events["gen_lep_2_pt"]),0)
+lepton2_etas=np.where(np.array(events["gen_lep_2_eta"]),np.array(events["gen_lep_2_eta"]),0)
+lepton2_phis=np.where(np.array(events["gen_lep_2_phi"]),np.array(events["gen_lep_2_phi"]),0) 
+lepton2_Ids=np.where(np.array(events["gen_lep_2_pdgId"]),np.array(events["gen_lep_2_pdgId"]),0)
 lepton2_pts = lepton2_pts.astype('float')
 lepton2_etas= lepton2_etas.astype('float')
+lepton2_phis=lepton2_phis.astype('float')
+lepton2_Ids=lepton2_Ids.astype('float')
+lepton2_ms = np.where(lepton2_Ids == 11, electron_mass, muon_mass)  
 lepton2_ys=energyflow.ys_from_pts_etas_ms(lepton2_pts, lepton2_etas, lepton2_ms)
 
-print(lepton2_ms[10])
-print(lepton1_ms[25])
 
-lepton3_etas=np.array(events["gen_lep_3_eta"])
-lepton3_phis=np.array(events["gen_lep_3_phi"])
-lepton3_pts=np.array(events["gen_lep_3_pt"])
-lepton3_Ids=np.array(events["gen_lep_3_pdgId"])
-lepton3_ms = np.where(lepton3_Ids == 11, electron_mass, muon_mass) 
+lepton3_pts=np.where(np.array(events["gen_lep_3_pt"]),np.array(events["gen_lep_3_pt"]),0)
+lepton3_etas=np.where(np.array(events["gen_lep_3_eta"]),np.array(events["gen_lep_3_eta"]),0)
+lepton3_phis=np.where(np.array(events["gen_lep_3_phi"]),np.array(events["gen_lep_3_phi"]),0) 
+lepton3_Ids=np.where(np.array(events["gen_lep_3_pdgId"]),np.array(events["gen_lep_3_pdgId"]),0)
 lepton3_pts = lepton3_pts.astype('float')
 lepton3_etas= lepton3_etas.astype('float')
+lepton3_phis=lepton3_phis.astype('float')
+lepton3_Ids=lepton3_Ids.astype('float')
+lepton3_ms = np.where(lepton3_Ids == 11, electron_mass, muon_mass)  
 lepton3_ys=energyflow.ys_from_pts_etas_ms(lepton3_pts, lepton3_etas, lepton3_ms)
 
 
 if args.process=='tttt':
-    lepton4_etas=np.array(events["gen_lep_4_eta"])
-    lepton4_phis=np.array(events["gen_lep_4_phi"])
-    lepton4_pts=np.array(events["gen_lep_4_pt"])
-    lepton4_Ids=np.array(events["gen_lep_4_pdgId"])
-    lepton4_ms = np.where(lepton4_Ids == 11, electron_mass, muon_mass) 
+    lepton4_pts=np.where(np.array(events["gen_lep_4_pt"]),np.array(events["gen_lep_4_pt"]),0)
+    lepton4_etas=np.where(np.array(events["gen_lep_4_eta"]),np.array(events["gen_lep_4_eta"]),0)
+    lepton4_phis=np.where(np.array(events["gen_lep_4_phi"]),np.array(events["gen_lep_4_phi"]),0) 
+    lepton4_Ids=np.where(np.array(events["gen_lep_4_pdgId"]),np.array(events["gen_lep_4_pdgId"]),0)
+    lepton4_pts = lepton4_pts.astype('float')
+    lepton4_etas= lepton4_etas.astype('float')
+    lepton4_phis=lepton4_phis.astype('float')
+    lepton4_Ids=lepton4_Ids.astype('float')
+    lepton4_ms = np.where(lepton4_Ids == 11, electron_mass, muon_mass)  
     lepton4_ys=energyflow.ys_from_pts_etas_ms(lepton4_pts, lepton4_etas, lepton4_ms)
 
 
 top1_ptyphims=np.array([top1_pts,top1_ys,top1_phis,top_masses])
-print(top1_ptyphims)
-print(top1_ptyphims.shape)
 top2_ptyphims=np.array([top2_pts,top2_ys,top2_phis,top_masses])
 top3_ptyphims=np.array([top3_pts,top3_ys,top3_phis,top_masses])    
 lepton1_ptyphipms=np.array([lepton1_pts,lepton1_ys,lepton1_phis,lepton1_ms])
 lepton2_ptyphipms=np.array([lepton2_pts,lepton2_ys,lepton2_phis,lepton2_ms])
 lepton3_ptyphipms=np.array([lepton3_pts,lepton3_ys,lepton3_phis,lepton3_ms])
-if args.ntops==4:
+if args.process=='tttt':
     top4_ptyphims=np.array([top4_pts,top4_ys,top4_phis,top_masses])
     lepton4_ptyphipms=np.array([lepton4_pts,lepton4_ys,lepton4_phis,lepton4_ms])
 
@@ -149,10 +143,10 @@ lep1_in_top_frame=lep1.boostCM_of_p4(top1) #Remember these are all in p4s
 lep2_in_top_frame=lep2.boostCM_of_p4(top2) 
 lep3_in_top_frame=lep3.boostCM_of_p4(top3)
 if args.process=='tttt':
-    top4_p4s=energyflow.p4s_from_ptyphims(top4_ptyphims)
-    lepton4_p4s=energyflow.p4s_from_ptyphipms(lepton4_ptyphipms, error_on_unknown=False)
+    top4_p4s=energyflow.p4s_from_ptyphims(np.transpose(top4_ptyphims))
+    lepton4_p4s=energyflow.p4s_from_ptyphims(np.transpose(lepton4_ptyphipms))
     top4 = vector.obj(px=top4_p4s[:,1], py=top4_p4s[:,2], pz=top4_p4s[:,3], mass=top_mass)
-    lep4= vector.obj(px=lepton4_p4s[:,1], py=lepton4_p4s[:,2], pz=lepton4_p4s[:,3], mass=lepton4_ms)
+    lep4 = vector.obj(px=lepton4_p4s[:,1], py=lepton4_p4s[:,2], pz=lepton4_p4s[:,3], mass=lepton4_ms)
     lep4_in_top_frame=lep4.boostCM_of_p4(top4)
 
 
@@ -206,7 +200,8 @@ for i in range(len(Same_Mother_Top)):
         cos_phi_hist_r.Fill(cos_phi_event) 
     
 Good_Mother=ak.fill_none(((Same_Mother_Top!=0 ) & (Same_Mother_Top!=4)),False)
-cos_phi_without_0s=np.array(cos_phi_with_0s)[Good_Mother]
+cos_phi_with_0s=np.array(cos_phi_with_0s)
+cos_phi_without_0s=cos_phi_with_0s[Good_Mother]
 print(len(cos_phi_with_0s))
 print(len(cos_phi_without_0s))
 midbins=(bins[:-1] + bins[1:])/2
