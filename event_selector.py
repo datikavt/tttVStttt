@@ -154,29 +154,29 @@ gen_part=gen_part[is_3L_channel] #save the selected GenPart
 
 
 gen_lep_1_selected = gen_lep_1[is_3L_channel]
-gen_lep_1_pt= np.array(gen_lep_1_selected.pt)
-gen_lep_1_phi=np.array(gen_lep_1_selected.phi)
-gen_lep_1_eta=np.array(gen_lep_1_selected.eta)
-gen_lep_1_pdgId=np.array(gen_lep_1_selected.absPdgId)
+gen_lep_1_pt= (gen_lep_1_selected.pt)
+gen_lep_1_phi=(gen_lep_1_selected.phi)
+gen_lep_1_eta=gen_lep_1_selected.eta
+gen_lep_1_pdgId=(gen_lep_1_selected.absPdgId)
 
 gen_lep_2_selected = gen_lep_2[is_3L_channel]
-gen_lep_2_pt= np.array(gen_lep_2_selected.pt)
-gen_lep_2_phi=np.array(gen_lep_2_selected.pt)
-gen_lep_2_eta=np.array(gen_lep_2_selected.eta)
-gen_lep_2_pdgId=np.array(gen_lep_2_selected.absPdgId)
+gen_lep_2_pt= (gen_lep_2_selected.pt)
+gen_lep_2_phi=(gen_lep_2_selected.pt)
+gen_lep_2_eta=(gen_lep_2_selected.eta)
+gen_lep_2_pdgId=(gen_lep_2_selected.absPdgId)
 
 gen_lep_3_selected = gen_lep_3[is_3L_channel]
-gen_lep_3_pt= np.array(gen_lep_3_selected.pt)
-gen_lep_3_phi=np.array(gen_lep_3_selected.phi)
-gen_lep_3_eta=np.array(gen_lep_3_selected.eta)
-gen_lep_3_pdgId=np.array(gen_lep_3_selected.absPdgId)
+gen_lep_3_pt= (gen_lep_3_selected.pt)
+gen_lep_3_phi=(gen_lep_3_selected.phi)
+gen_lep_3_eta=(gen_lep_3_selected.eta)
+gen_lep_3_pdgId=(gen_lep_3_selected.absPdgId)
 
 if args.ntops==4:
     gen_lep_4_selected = gen_lep_4[is_3L_channel]
-    gen_lep_4_pt= np.array(gen_lep_4_selected.pt)
-    gen_lep_4_phi=np.array(gen_lep_4_selected.phi)
-    gen_lep_4_eta=np.array(gen_lep_4_selected.eta)
-    gen_lep_4_pdgId=np.array(gen_lep_4_selected.absPdgId)
+    gen_lep_4_pt= (gen_lep_4_selected.pt)
+    gen_lep_4_phi=(gen_lep_4_selected.phi)
+    gen_lep_4_eta=(gen_lep_4_selected.eta)
+    gen_lep_4_pdgId=(gen_lep_4_selected.absPdgId)
 
 gen_top_1_selected = gen_top_1[is_3L_channel]
 gen_top_1_pt=np.array(gen_top_1_selected.pt) #we need to use sth otherwise ROOT can't save it as it's an ak-like array
@@ -280,7 +280,7 @@ if args.ntops==4:
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
                             "gen_lep_2_pt": gen_lep_2_pt, "gen_lep_2_phi": gen_lep_2_phi,"gen_lep_2_eta": gen_lep_2_eta, "gen_lep_2_pdgId": gen_lep_2_pdgId,
                             "gen_lep_3_pt": gen_lep_3_pt, "gen_lep_3_phi": gen_lep_3_phi,"gen_lep_3_eta": gen_lep_3_eta, "gen_lep_3_pdgId": gen_lep_3_pdgId,
-                            "gen_lep_4_pt": gen_lep_4_pt, "gen_lep_4_phi": gen_lep_4_phi,"gen_lep_3_eta": gen_lep_4_eta, "gen_lep_3_pdgId": gen_lep_4_pdgId,
+                            "gen_lep_4_pt": gen_lep_4_pt, "gen_lep_4_phi": gen_lep_4_phi,"gen_lep_4_eta": gen_lep_4_eta, "gen_lep_4_pdgId": gen_lep_4_pdgId,
                             "gen_top_1_pt": gen_top_1_pt, "gen_top_1_phi": gen_top_1_phi,"gen_top_1_eta": gen_top_1_eta, 
                             "gen_top_2_pt": gen_top_2_pt, "gen_top_2_phi": gen_top_2_phi,"gen_top_2_eta": gen_top_2_eta, 
                             "gen_top_3_pt": gen_top_3_pt, "gen_top_3_phi": gen_top_3_phi,"gen_top_3_eta": gen_top_3_eta,
@@ -288,7 +288,7 @@ if args.ntops==4:
                             "Same_Mother_top":Same_Mother_Top,
                         }
 
-else:
+else:   
     with uproot.recreate("selected_Events.root") as output_file:
         output_file["Events"] = {
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
