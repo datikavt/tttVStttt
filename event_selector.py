@@ -15,7 +15,8 @@ parser.add_argument('-p','--process',type=str,help='specify the process ex. tttW
 args = parser.parse_args()
 
 print('INFO: selecting events from the file:' + str(args.file))
-
+fileName = args.file.split("/")[-1]
+fileLastFolder=args.file.split("/")[-2]
 fileData=uproot.open(args.file)
 
 events = NanoEventsFactory.from_root(
@@ -63,7 +64,7 @@ from_hard_proc = gen_part.hasFlags("fromHardProcess")
 is_last_copy = gen_part.hasFlags("isLastCopy") # the last copy of the particle in the chain with the same pdg id
                                              # (and therefore is more likely, but not guaranteed,
                                              # to carry the final physical momentum)
-
+is_first_copy=gen_part.hasFlags("isFirstCopy")
 # find top quarks produced during the hard scattering
 gen_part_hp = gen_part[is_hard_proc]
 gen_hp_top = gen_part_hp[gen_part_hp.absPdgId == 6]
@@ -76,6 +77,7 @@ if args.process=='tttt':
 
 # find last copy of top quarks before decay. 
 gen_top = gen_part[(gen_part.absPdgId == 6) & is_last_copy]
+# gen_top=gen_part[(gen_part.absPdgId == 6) & is_first_copy]
 gen_top = ak.pad_none(gen_top, 4)
 gen_top_1 = gen_top[:, 0]
 gen_top_2 = gen_top[:, 1]
@@ -127,7 +129,7 @@ if args.process=='tttt':
 
 #Select events with at least 3 generator level leptons that come from  top-W! ------------------------------------------------------------------------------
 n_gen_lep_1, n_gen_lep_2, n_gen_lep_3 = ak.num(gen_lep_1), ak.num(gen_lep_2), ak.num(gen_lep_3) #Count the number of elements in gen_leptons 
-is_3L_channel = ak.fill_none(  #Fill none's with False
+is_3L_channel = ak.fill_none( 
         (
             (n_gen_lep_1+n_gen_lep_2+n_gen_lep_3) == 3
             
@@ -138,7 +140,7 @@ is_3L_channel = ak.fill_none(  #Fill none's with False
 
 if args.process=='tttt':
     n_gen_lep_4 = ak.num(gen_lep_4)
-    is_3L_channel = ak.fill_none(  #Fill none's with False
+    is_3L_channel = ak.fill_none(
         (
             (n_gen_lep_1+n_gen_lep_2+n_gen_lep_3+n_gen_lep_4 ) == 3
         ),
@@ -152,24 +154,36 @@ L3_Channel_events=events[is_3L_channel]
 gen_part=gen_part[is_3L_channel] #save the selected GenPart 
 
 
-
+lepton_is_in_3L={}
 gen_lep_1_selected = gen_lep_1[is_3L_channel]
 gen_lep_1_pt= (gen_lep_1_selected.pt)
 gen_lep_1_phi=(gen_lep_1_selected.phi)
 gen_lep_1_eta=gen_lep_1_selected.eta
 gen_lep_1_pdgId=(gen_lep_1_selected.absPdgId)
+lepton_is_in_3L.setdefault('1', {}).update({
+    'is_present': ak.fill_none((gen_lep_1_selected.pt>5),False)
+})
+print(lepton_is_in_3L['1']['is_present'])
+print(ak.num(gen_lep_1_selected))
+print(ak.num(gen_lep_1_selected)[0])
 
 gen_lep_2_selected = gen_lep_2[is_3L_channel]
 gen_lep_2_pt= (gen_lep_2_selected.pt)
 gen_lep_2_phi=(gen_lep_2_selected.pt)
 gen_lep_2_eta=(gen_lep_2_selected.eta)
 gen_lep_2_pdgId=(gen_lep_2_selected.absPdgId)
+lepton_is_in_3L.setdefault('2', {}).update({
+    'is_present': ak.fill_none((gen_lep_2_selected.pt>5),False)
+})
 
 gen_lep_3_selected = gen_lep_3[is_3L_channel]
 gen_lep_3_pt= (gen_lep_3_selected.pt)
 gen_lep_3_phi=(gen_lep_3_selected.phi)
 gen_lep_3_eta=(gen_lep_3_selected.eta)
 gen_lep_3_pdgId=(gen_lep_3_selected.absPdgId)
+lepton_is_in_3L.setdefault('3', {}).update({
+    'is_present': ak.fill_none((gen_lep_3_selected.pt>5),False)
+})
 
 if args.process=='tttt':
     gen_lep_4_selected = gen_lep_4[is_3L_channel]
@@ -177,6 +191,9 @@ if args.process=='tttt':
     gen_lep_4_phi=(gen_lep_4_selected.phi)
     gen_lep_4_eta=(gen_lep_4_selected.eta)
     gen_lep_4_pdgId=(gen_lep_4_selected.absPdgId)
+    lepton_is_in_3L.setdefault('4', {}).update({
+    'is_present': ak.fill_none((gen_lep_4_selected.pt>5),False)
+    })
 
 gen_top_1_selected = gen_top_1[is_3L_channel]
 gen_top_1_pt=np.array(gen_top_1_selected.pt) #we need to use sth otherwise ROOT can't save it as it's an ak-like array
@@ -199,83 +216,78 @@ if args.process=='tttt':
     gen_top_4_phi=np.array(gen_top_4_selected.phi)
     gen_top_4_eta=np.array(gen_top_4_selected.eta)
 
-# Pairing the correct leptons to the ttbar
-gen_top_1_Mothers=parent(gen_top_1_selected)
-gen_top_2_Mothers=parent(gen_top_2_selected)
-gen_top_3_Mothers=parent(gen_top_3_selected)
 
-if args.process=='tttt':
-    gen_top_4_Mothers=parent(gen_top_4_selected)
-
-#Remember gen_part is already 3L selected
-
-def is_same_mother(gen_top_Mother1, gen_top_Mother2 ):
-        if gen_top_Mother1.index == gen_top_Mother2.index:
-            return True
-        else:
-            return False
-
+#There's definetely a nicer and faster way to do this but for now let's keep it
+# def possible_ttbar_pair(top_1,top_2,i,j,event_number):
+#     if (lepton_is_in_3L[str(i)]['is_present'][event_number] & lepton_is_in_3L[str(j)]['is_present'][event_number]):
+#             if (top_1.pdgId[event_number] != top_2.pdgId[event_number]):
+#                 return True
+#             else:
+#                 return False
+#     else:
+#         return False
+    
+def possible_ttbar_pair(top_1,top_2,gen_lep_1,gen_lep_2,event_number):
+    if ((ak.num(gen_lep_1)[event_number]!=0) & (ak.num(gen_lep_2)[event_number]!=0)):
+            if (top_1.pdgId[event_number] != top_2.pdgId[event_number]):
+                return True
+            else:
+                return False
+    else:
+        return False
 
 
 #Need to construct an array that will write 
-Same_Mother_Top=[]
+Possible_pairs=[]
 #I'll go for a loop but surely there's a better way
 if args.process=='tttt':
      for i in range(len(L3_Channel_events)):
         #Make sure there's no error and they don't all have same mother
-        gen_top_1_Mother=gen_top_1_Mothers[i]
-        gen_top_2_Mother=gen_top_2_Mothers[i]
-        gen_top_3_Mother=gen_top_3_Mothers[i]
-        gen_top_4_Mother=gen_top_4_Mothers[i]
-        if (is_same_mother(gen_top_1_Mother,gen_top_2_Mother) & is_same_mother(gen_top_1_Mother,gen_top_3_Mother)) | (is_same_mother(gen_top_2_Mother,gen_top_3_Mother) & is_same_mother(gen_top_1_Mother,gen_top_2_Mother)) | (is_same_mother(gen_top_2_Mother,gen_top_3_Mother) & is_same_mother(gen_top_1_Mother,gen_top_2_Mother)):
-            print("error same mother for two pair combination in event " + str(i))
-            Same_Mother_Top.append(0)
-            continue
-        if is_same_mother(gen_top_1_Mother,gen_top_2_Mother):
-            Same_Mother_Top.append(1)
-            continue
-        if is_same_mother(gen_top_1_Mother,gen_top_3_Mother):
-            Same_Mother_Top.append(2)
-            continue
-        if is_same_mother(gen_top_2_Mother,gen_top_3_Mother):
-            Same_Mother_Top.append(3)
-            continue
-        if is_same_mother(gen_top_1_Mother,gen_top_4_Mother):
-            Same_Mother_Top.append(5)
-            continue
-        if is_same_mother(gen_top_2_Mother,gen_top_4_Mother):
-            Same_Mother_Top.append(6)
-            continue
-        if is_same_mother(gen_top_3_Mother,gen_top_4_Mother):
-            Same_Mother_Top.append(7)
-            continue    
-        Same_Mother_Top.append(4) #append 4 if there was not found a same mother tops.
+        #Make sure that the leptons exist
+        if (possible_ttbar_pair(gen_top_1_selected,gen_top_2_selected,gen_lep_1_selected,gen_lep_2_selected,i)):
+            Possible_pairs.append(1)
+        if possible_ttbar_pair(gen_top_1_selected,gen_top_3_selected,gen_lep_1_selected,gen_lep_3_selected,i):
+            Possible_pairs.append(2)
+        if possible_ttbar_pair(gen_top_2_selected,gen_top_3_selected,gen_lep_2_selected,gen_lep_3_selected,i):
+            Possible_pairs.append(3)
+        if possible_ttbar_pair(gen_top_1_selected,gen_top_4_selected,gen_lep_1_selected,gen_lep_4_selected,i):
+            Possible_pairs.append(5)
+        if possible_ttbar_pair(gen_top_2_selected,gen_top_4_selected,gen_lep_2_selected,gen_lep_4_selected,i):
+            Possible_pairs.append(6)
+        if possible_ttbar_pair(gen_top_3_selected,gen_top_4_selected,gen_lep_3_selected,gen_lep_4_selected,i):
+            Possible_pairs.append(7)
+        # Possible_pairs.append(4) #append 4 if there was not found a same mother tops.
 else:     
     for i in range(len(L3_Channel_events)):
          #Make sure there's no error and they don't all have same mother
-        gen_top_1_Mother=gen_top_1_Mothers[i]
-        gen_top_2_Mother=gen_top_2_Mothers[i]
-        gen_top_3_Mother=gen_top_3_Mothers[i]
-        if (is_same_mother(gen_top_1_Mother,gen_top_2_Mother) & is_same_mother(gen_top_1_Mother,gen_top_3_Mother)) | (is_same_mother(gen_top_2_Mother,gen_top_3_Mother) & is_same_mother(gen_top_1_Mother,gen_top_2_Mother)) | (is_same_mother(gen_top_2_Mother,gen_top_3_Mother) & is_same_mother(gen_top_1_Mother,gen_top_2_Mother)):
-            print("error same mother for two pair combination in event " + str(i))
-            Same_Mother_Top.append(0)
-            continue
-        if is_same_mother(gen_top_1_Mother,gen_top_2_Mother):
-            Same_Mother_Top.append(1)
-            continue
-        if is_same_mother(gen_top_1_Mother,gen_top_3_Mother):
-            Same_Mother_Top.append(2)
-            continue
-        if is_same_mother(gen_top_2_Mother,gen_top_3_Mother):
-            Same_Mother_Top.append(3)
-            continue
-        Same_Mother_Top.append(4) #append 4 if there was not found a same mother tops.
+        # gen_top_1_Mother=gen_top_1_Mothers[i]
+        # gen_top_2_Mother=gen_top_2_Mothers[i]
+        # gen_top_3_Mother=gen_top_3_Mothers[i]
+        # if (possible_ttbar_pair(gen_top_1_Mother,gen_top_2_Mother) & possible_ttbar_pair(gen_top_1_Mother,gen_top_3_Mother)) | (possible_ttbar_pair(gen_top_2_Mother,gen_top_3_Mother) & possible_ttbar_pair(gen_top_1_Mother,gen_top_2_Mother)) | (possible_ttbar_pair(gen_top_2_Mother,gen_top_3_Mother) & possible_ttbar_pair(gen_top_1_Mother,gen_top_2_Mother)):
+        #     print("error same mother for two pair combination in event " + str(i))
+        #     Possible_pairs.append(0)
+        if possible_ttbar_pair(gen_top_1_selected,gen_top_2_selected,gen_lep_1_selected,gen_lep_2_selected,i):
+            Possible_pairs.append(1)
+        if possible_ttbar_pair(gen_top_1_selected,gen_top_3_selected,gen_lep_1_selected,gen_lep_3_selected,i):
+            Possible_pairs.append(2)
+        if possible_ttbar_pair(gen_top_2_selected,gen_top_3_selected,gen_lep_2_selected,gen_lep_3_selected,i):
+            Possible_pairs.append(3)
+        # Possible_pairs.append(4) #append 4 if there was not found a same mother tops.
     
 print("len of L3_events is " +str(len(L3_Channel_events)) )
-print("Same mother top length is " + str(len(Same_Mother_Top)))
+print("Same mother top length is " + str(len(Possible_pairs)))
+
+#Take the two Possible pairs of event they will be store separately
+Possible_Pair_1=Possible_pairs[0::2]
+Possible_Pair_2=Possible_pairs[1::2]
+print("top1 id  is " +str(gen_top_1_selected.pdgId)) 
+print("top2 id is " +str(gen_top_2_selected.pdgId)) 
+print("top3 id is " +str(gen_top_3_selected.pdgId)) 
+print("Possible_Pair1 at -1 is" + str(Possible_Pair_1[-1]))
+print("Possible_Pair2 at -1 is" + str(Possible_Pair_2[-1]))
 
 if args.process=='tttt':
-    with uproot.recreate(str(args.process)+"_selected_Events.root") as output_file:
+    with uproot.recreate("selected_Events/"+str(args.process)+"/"+str(fileLastFolder)+"/"+str(fileName)) as output_file:
         output_file["Events"] = {
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
                             "gen_lep_2_pt": gen_lep_2_pt, "gen_lep_2_phi": gen_lep_2_phi,"gen_lep_2_eta": gen_lep_2_eta, "gen_lep_2_pdgId": gen_lep_2_pdgId,
@@ -285,11 +297,11 @@ if args.process=='tttt':
                             "gen_top_2_pt": gen_top_2_pt, "gen_top_2_phi": gen_top_2_phi,"gen_top_2_eta": gen_top_2_eta, 
                             "gen_top_3_pt": gen_top_3_pt, "gen_top_3_phi": gen_top_3_phi,"gen_top_3_eta": gen_top_3_eta,
                             "gen_top_4_pt": gen_top_4_pt, "gen_top_4_phi": gen_top_4_phi,"gen_top_4_eta": gen_top_4_eta,  
-                            "Same_Mother_top":Same_Mother_Top,
+                            "Possible_Pair_1":Possible_Pair_1,"Possible_Pair_2":Possible_Pair_2,
                         }
 
 else:   
-    with uproot.recreate(str(args.process)+"_selected_Events.root")  as output_file:
+    with uproot.recreate("selected_Events/"+str(args.process)+"/"+str(fileLastFolder)+"/"+str(fileName)) as output_file:
         output_file["Events"] = {
                             "gen_lep_1_pt": gen_lep_1_pt, "gen_lep_1_phi": gen_lep_1_phi,"gen_lep_1_eta": gen_lep_1_eta, "gen_lep_1_pdgId": gen_lep_1_pdgId,
                             "gen_lep_2_pt": gen_lep_2_pt, "gen_lep_2_phi": gen_lep_2_phi,"gen_lep_2_eta": gen_lep_2_eta, "gen_lep_2_pdgId": gen_lep_2_pdgId,
@@ -297,7 +309,7 @@ else:
                             "gen_top_1_pt": gen_top_1_pt, "gen_top_1_phi": gen_top_1_phi,"gen_top_1_eta": gen_top_1_eta, 
                             "gen_top_2_pt": gen_top_2_pt, "gen_top_2_phi": gen_top_2_phi,"gen_top_2_eta": gen_top_2_eta, 
                             "gen_top_3_pt": gen_top_3_pt, "gen_top_3_phi": gen_top_3_phi,"gen_top_3_eta": gen_top_3_eta, 
-                            "Same_Mother_top":Same_Mother_Top,
+                            "Possible_Pair_1":Possible_Pair_1,"Possible_Pair_2":Possible_Pair_2,
                         }
 
 

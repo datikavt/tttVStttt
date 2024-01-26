@@ -22,10 +22,9 @@ args = parser.parse_args()
 
 fileData=uproot.open(args.file)
 events=fileData["Events"]
-Same_Mother_Top=np.array(events["Same_Mother_top"])
-is_7=ak.fill_none((Same_Mother_Top==7),False)
-Same_Mother_Top_is_7=Same_Mother_Top[is_7]
-print(len(Same_Mother_Top_is_7)) 
+#Get the two possible pairs of leptons
+Possible_Pair_1=np.array(events["Possible_Pair_1"])
+Possible_Pair_2=np.array(events["Possible_Pair_2"])
 
 
 top_mass=172.76 #GeV
@@ -151,85 +150,63 @@ if args.process=='tttt':
 
 
 #Calculates the cos_phi for the indicated pair of leptons and for the indicated_event
-def Calculate_cos_phi(event_number):
-    if Same_Mother_Top[event_number]==1:
+def Calculate_cos_phi(event_number,Pair):
+    if Pair[event_number]==1:
         #Dot product of the vectors
         lep1_in_top_frame_3D=vector.obj(px=lep1_in_top_frame.px[event_number],py=lep1_in_top_frame.py[event_number],pz=lep1_in_top_frame.pz[event_number])
         lep2_in_top_frame_3D=vector.obj(px=lep2_in_top_frame.px[event_number],py=lep2_in_top_frame.py[event_number],pz=lep2_in_top_frame.pz[event_number])
         cos_phi_e=(lep1_in_top_frame_3D @ lep2_in_top_frame_3D)/(lep1_in_top_frame_3D.mag * lep2_in_top_frame_3D.mag)
         return cos_phi_e
-    if Same_Mother_Top[event_number]==2:
+    if Pair[event_number]==2:
         lep1_in_top_frame_3D=vector.obj(px=lep1_in_top_frame.px[event_number],py=lep1_in_top_frame.py[event_number],pz=lep1_in_top_frame.pz[event_number])
         lep3_in_top_frame_3D=vector.obj(px=lep3_in_top_frame.px[event_number],py=lep3_in_top_frame.py[event_number],pz=lep3_in_top_frame.pz[event_number])
         cos_phi_e=(lep1_in_top_frame_3D @ lep3_in_top_frame_3D)/(lep1_in_top_frame_3D.mag * lep3_in_top_frame_3D.mag)
         return cos_phi_e
-    if Same_Mother_Top[event_number]==3:
+    if Pair[event_number]==3:
         lep2_in_top_frame_3D=vector.obj(px=lep2_in_top_frame.px[event_number],py=lep2_in_top_frame.py[event_number],pz=lep2_in_top_frame.pz[event_number])
         lep3_in_top_frame_3D=vector.obj(px=lep3_in_top_frame.px[event_number],py=lep3_in_top_frame.py[event_number],pz=lep3_in_top_frame.pz[event_number])
         cos_phi_e=(lep2_in_top_frame_3D @ lep3_in_top_frame_3D)/(lep2_in_top_frame_3D.mag * lep3_in_top_frame_3D.mag)
         return cos_phi_e
-    if Same_Mother_Top[event_number]==4 or Same_Mother_Top[event_number]==0: 
+    if Pair[event_number]==4 or Pair[event_number]==0: 
         cos_phi_e=0 # Put 0s for where the Mother is not clear
         return cos_phi_e
-    if Same_Mother_Top[event_number]==5:
+    if Pair[event_number]==5:
         lep1_in_top_frame_3D=vector.obj(px=lep1_in_top_frame.px[event_number],py=lep1_in_top_frame.py[event_number],pz=lep1_in_top_frame.pz[event_number])
         lep4_in_top_frame_3D=vector.obj(px=lep4_in_top_frame.px[event_number],py=lep4_in_top_frame.py[event_number],pz=lep4_in_top_frame.pz[event_number])
         cos_phi_e=(lep1_in_top_frame_3D @ lep4_in_top_frame_3D)/(lep1_in_top_frame_3D.mag * lep4_in_top_frame_3D.mag)
         return cos_phi_e
-    if Same_Mother_Top[event_number]==6:
+    if Pair[event_number]==6:
         lep2_in_top_frame_3D=vector.obj(px=lep2_in_top_frame.px[event_number],py=lep2_in_top_frame.py[event_number],pz=lep2_in_top_frame.pz[event_number])
         lep4_in_top_frame_3D=vector.obj(px=lep4_in_top_frame.px[event_number],py=lep4_in_top_frame.py[event_number],pz=lep4_in_top_frame.pz[event_number])
         cos_phi_e=(lep2_in_top_frame_3D @ lep4_in_top_frame_3D)/(lep2_in_top_frame_3D.mag * lep4_in_top_frame_3D.mag)
         return cos_phi_e
-    if Same_Mother_Top[event_number]==7:
+    if Pair[event_number]==7:
         lep3_in_top_frame_3D=vector.obj(px=lep3_in_top_frame.px[event_number],py=lep3_in_top_frame.py[event_number],pz=lep3_in_top_frame.pz[event_number])
         lep4_in_top_frame_3D=vector.obj(px=lep4_in_top_frame.px[event_number],py=lep4_in_top_frame.py[event_number],pz=lep4_in_top_frame.pz[event_number])
         cos_phi_e=(lep3_in_top_frame_3D @ lep4_in_top_frame_3D)/(lep3_in_top_frame_3D.mag * lep4_in_top_frame_3D.mag)
         return cos_phi_e
-    
-    
+
 bins=np.linspace(-1,1,9)
-cos_phi_with_0s=[] #Will store cos_phis of every event and 0s for events without tt pair 
-cos_phi_hist_r=ROOT.TH1F("cos_phi_histogram","cos_phi_histogram",8,-1,1) #define the cos_phi_hist
-for i in range(len(Same_Mother_Top)):
-    cos_phi_event=Calculate_cos_phi(i)
-    cos_phi_with_0s.append(cos_phi_event)
-    if Same_Mother_Top[i]==4 or Same_Mother_Top[i]==0: 
-        continue
-    else:
-        cos_phi_hist_r.Fill(cos_phi_event) 
+cos_phi=[] #Will store cos_phis of every possible ttbar pair
+
+for i in range(len(Possible_Pair_1)):
+    cos_phi_pair=Calculate_cos_phi(i,Possible_Pair_1)
+    cos_phi.append(cos_phi_pair)
+    cos_phi_pair=Calculate_cos_phi(i,Possible_Pair_2)
+    cos_phi.append(cos_phi_pair)
     
-Good_Mother=ak.fill_none(((Same_Mother_Top!=0 ) & (Same_Mother_Top!=4)),False)
-cos_phi_with_0s=np.array(cos_phi_with_0s)
-cos_phi_without_0s=cos_phi_with_0s[Good_Mother]
-print(len(cos_phi_with_0s))
-print(len(cos_phi_without_0s))
+    
 midbins=(bins[:-1] + bins[1:])/2
 bin_width=bins[1:]-bins[:-1]
-cos_phi_hist_with_0s=np.histogram(np.array(cos_phi_with_0s),bins)
-cos_phi_hist_without_0s=np.histogram(np.array(cos_phi_without_0s),bins)
+cos_phi_hist=np.histogram(cos_phi,bins)
+
 tttW_style = {'histtype': 'step', 'density': False, 'lw': 1, 'zorder': 2,'label': 'tttW'}
 #From CAT
 fig, ax = plt.subplots()
-hep.cms.label("", ax=ax, loc=0)
-
-ax.hist(cos_phi_with_0s,8)
+hep.cms.label("$\cos \phi$", ax=ax, loc=0)
+ax.hist(cos_phi,8)
 # ax.hist(cos_phi_with_0s,midbins,*tttW_style)
 # Calculate D with event's that introduce 0 s 
-D_with_0s=-3*np.average(np.asarray(cos_phi_with_0s))
-D_without_0s=-3*np.average(np.asarray(cos_phi_without_0s))
-print("D_with_0s is " + str(D_with_0s))
-print("D without 0s is " + str(D_without_0s))
-fig.savefig('Cos_phi_with_0_'+str(args.process) +'.pdf', bbox_inches='tight')
-
-
-#ROOT plotting
-CMS.SetExtraText("Simulation Preliminary")
-CMS.SetLumi("")
-canv = CMS.cmsCanvas('', 0, 1, 0, 1, '', '', square = CMS.kSquare, extraSpace=0.01, iPos=0)
-hdf = CMS.GetcmsCanvasHist(canv)
-hdf.GetYaxis().SetMaxDigits(2)
-# Shift multiplier position
-ROOT.TGaxis.SetExponentOffset(-0.10, 0.01, "Y")
-cos_phi_hist_r.Draw("HIST")
-canv.SaveAs(os.path.join("plots","ROOT_cos_phi:"+str(args.process)+";n_toys"+".pdf"))
+D_proxy=-3*np.average(np.asarray(cos_phi))
+print("D is " + str(D_proxy))
+fig.savefig('Cos_phi'+str(args.process) +'.pdf', bbox_inches='tight')
