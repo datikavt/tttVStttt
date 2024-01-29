@@ -347,15 +347,14 @@ def Get_cosphi_lab(file,process):
             lep4_3D=vector.obj(px=lep4.px[event_number],py=lep4.py[event_number],pz=lep4.pz[event_number])
             cos_phi_e=(lep3_3D @ lep4_3D)/(lep3_3D.mag * lep4_3D.mag)
             return cos_phi_e
-
     
-    cos_phi_lab=[] #Will store cos_phis of every possible ttbar pair
+    cos_phi_lab=[] #Will store cos_phis_labs of every possible ttbar pair
 
     for i in range(len(Possible_Pair_1)):
         cos_phi_pair=Calculate_cos_phi_lab(i,Possible_Pair_1)
         cos_phi_lab.append(cos_phi_pair)
         cos_phi_pair=Calculate_cos_phi_lab(i,Possible_Pair_2)
         cos_phi_lab.append(cos_phi_pair)
-        
+
     return cos_phi_lab
 
