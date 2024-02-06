@@ -8,6 +8,10 @@ import os  # file handling
 import ROOT
 import argparse  # I/O
 import energyflow 
+import math
+top_mass=172.76 #GeV
+electron_mass=0.000511 #GeV
+muon_mass=0.10566 #GeV
 
 
 
@@ -158,9 +162,8 @@ def Get_cosphi(file,process):
             lep3_in_top_frame_3D=vector.obj(px=lep3_in_top_frame.px[event_number],py=lep3_in_top_frame.py[event_number],pz=lep3_in_top_frame.pz[event_number])
             cos_phi_e=(lep2_in_top_frame_3D @ lep3_in_top_frame_3D)/(lep2_in_top_frame_3D.mag * lep3_in_top_frame_3D.mag)
             return cos_phi_e
-        if Pair[event_number]==4 or Pair[event_number]==0: 
-            cos_phi_e=0 # Put 0s for where the Mother is not clear
-            return cos_phi_e
+        if Pair[event_number]==4 or Pair[event_number]==0:  # Put 0s for where the Mother is not clear
+            return "continue"
         if Pair[event_number]==5:
             lep1_in_top_frame_3D=vector.obj(px=lep1_in_top_frame.px[event_number],py=lep1_in_top_frame.py[event_number],pz=lep1_in_top_frame.pz[event_number])
             lep4_in_top_frame_3D=vector.obj(px=lep4_in_top_frame.px[event_number],py=lep4_in_top_frame.py[event_number],pz=lep4_in_top_frame.pz[event_number])
@@ -181,7 +184,10 @@ def Get_cosphi(file,process):
 
     for i in range(len(Possible_Pair_1)):
         cos_phi_pair=Calculate_cos_phi(i,Possible_Pair_1)
-        cos_phi.append(cos_phi_pair)
+        if cos_phi_pair != "continue":
+            cos_phi.append(cos_phi_pair)
+        else:
+            continue    
         cos_phi_pair=Calculate_cos_phi(i,Possible_Pair_2)
         cos_phi.append(cos_phi_pair)
     
@@ -358,3 +364,97 @@ def Get_cosphi_lab(file,process):
 
     return cos_phi_lab
 
+
+def normalize_angle(angle):
+    # Normalize angle to be between 0 and 
+    normalized_angle = angle % (2*math.pi)
+    # Make sure the angle is between 0 and 1 radian
+    if normalized_angle > math.pi:
+        normalized_angle = 2*math.pi - normalized_angle
+    return normalized_angle
+
+
+def Get_delta_phi(file,process):
+    
+    fileData=uproot.open(file)
+    events=fileData["Events"]
+    
+    Possible_Pair_1=np.array(events["Possible_Pair_1"])
+    Possible_Pair_2=np.array(events["Possible_Pair_2"])
+    
+    lepton1_phis=np.where(np.array(events["gen_lep_1_phi"]),np.array(events["gen_lep_1_phi"]),0) 
+    lepton2_phis=np.where(np.array(events["gen_lep_2_phi"]),np.array(events["gen_lep_2_phi"]),0)
+    lepton3_phis=np.where(np.array(events["gen_lep_3_phi"]),np.array(events["gen_lep_3_phi"]),0)
+    lepton1_phis=lepton1_phis.astype('float')
+    lepton2_phis=lepton2_phis.astype('float') 
+    lepton3_phis=lepton3_phis.astype('float')
+    if process=='tttt':
+        lepton4_phis=np.where(np.array(events["gen_lep_4_phi"]),np.array(events["gen_lep_4_phi"]),0) 
+        lepton4_phis=lepton3_phis.astype('float')
+    
+    def Get_delta_phi_pair(event_number,Pair):
+        if Pair[event_number]==1:
+            phi1=(lepton1_phis[event_number]) % (2*math.pi)
+            phi2=(lepton2_phis[event_number]) % (2*math.pi)
+            delta_phi_pair=normalize_angle(abs(phi1-phi2))
+            return delta_phi_pair
+        if Pair[event_number]==2:
+            phi1=(lepton1_phis[event_number])  % (2*math.pi)
+            phi3=(lepton3_phis[event_number])  % (2*math.pi)
+            delta_phi_pair=normalize_angle(abs(phi1-phi3))
+            return delta_phi_pair
+        if Pair[event_number]==3:
+            phi2=(lepton2_phis[event_number]) % (2*math.pi)
+            phi3=(lepton3_phis[event_number]) % (2*math.pi)
+            delta_phi_pair=normalize_angle(abs(phi2-phi3))
+            return delta_phi_pair
+        if Pair[event_number]==4 or Pair[event_number]==0: 
+            return False
+        if Pair[event_number]==5:
+            phi1=(lepton1_phis[event_number])  % (2*math.pi)
+            phi4=(lepton4_phis[event_number])  % (2*math.pi)
+            delta_phi_pair=normalize_angle(abs(phi1-phi4))
+            return delta_phi_pair
+        if Pair[event_number]==6:
+            phi2=(lepton2_phis[event_number])  % (2*math.pi)
+            phi4=(lepton4_phis[event_number])  % (2*math.pi)
+            delta_phi_pair=normalize_angle(abs(phi2-phi4))
+            return delta_phi_pair
+        if Pair[event_number]==7:
+            phi3=(lepton3_phis[event_number])  % (2*math.pi)
+            phi4=(lepton4_phis[event_number])  % (2*math.pi)
+            delta_phi_pair=normalize_angle(abs(phi3-phi4))
+            return delta_phi_pair
+    
+    delta_phi=[]
+    for i in range(len(Possible_Pair_1)):
+        delta_phi_pair=Get_delta_phi_pair(i,Possible_Pair_1)
+        if delta_phi_pair!=False:
+            delta_phi.append(delta_phi_pair)
+        delta_phi_pair=Get_delta_phi_pair(i,Possible_Pair_2)
+        if delta_phi_pair!=False: #not required but just to be sure
+            delta_phi.append(delta_phi_pair)
+        
+    return delta_phi
+
+
+def Calculate_stat_err(cosphi):
+    ntoys=1000
+    fluctuated_cosphi_w=np.random.poisson(1,size=(len(cosphi),ntoys)) 
+    av_fluctuated_D=0
+    fluctuated_D_proxies=[]
+    for i in range(ntoys):
+        fluctuated_cosphi=cosphi*fluctuated_cosphi_w[:,i] 
+        fluctuated_D_proxy=-3*np.average(np.asarray(fluctuated_cosphi))
+        fluctuated_D_proxies.append(fluctuated_D_proxy)
+        av_fluctuated_D+=fluctuated_D_proxy
+    
+    av_fluctuated_D=av_fluctuated_D/ntoys
+    var=0
+    for i in range(ntoys):
+        var+=(fluctuated_D_proxies[i]-av_fluctuated_D)*(fluctuated_D_proxies-av_fluctuated_D)
+    
+    std_err=np.sqrt(var/ntoys)
+    
+    return std_err
+        
