@@ -4,11 +4,13 @@ def get_datasets():
     datasets={} #initialize an empty dictionary to store the datasets that we want to use for plotting
     datasets.setdefault('tttW', {}).update({
         'func': lambda dset, ptype: dset[ptype + 'tttW'],
-        'nrepos':3, 'repos':'2520000,2530000,260000', #repos separated by commas
+        'nrepos':5, 'repos':'2520000,2530000,260000,231218_110037,local', #repos separated by commas
+        # 'nrepos':3, 'repos':'2520000,2530000,260000',
         '2520000':'9660E5EF-E305-7546-B26E-9A759DBC1976.root',
         '2530000':'07E85166-4C72-3B4E-9572-2D070F2EF385.root',
-        # '260000':'07350478-4397-054C-B6F8-9F6979FF7357.root,ECACC29E-698C-EE42-A460-BAD444727AFA.root', #Filenames should be separated by commas
-        '260000':'ECACC29E-698C-EE42-A460-BAD444727AFA.root', 
+        '260000':'07350478-4397-054C-B6F8-9F6979FF7357.root,ECACC29E-698C-EE42-A460-BAD444727AFA.root', #Filenames should be separated by commas
+        '231218_110037':'NanoAOD_1.root,NanoAOD_2.root,NanoAOD_3.root,NanoAOD_4.root',
+        'local':'NanoAOD_1.root',
     })
     # More tttJ datasets: https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset+primary_dataset%3DTTTJ*
     datasets.setdefault('tttJ', {}).update({
